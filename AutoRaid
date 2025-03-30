@@ -37,7 +37,7 @@ local function JoinRaid()
           RaidRemote:FireServer()
           PartyRemote:FireServer('Create', 'Christmas')
           PartyRemote:Start() 
-     ebd 
+     end
 end 
 repeat task.wait() 
      JoinRaid() 
