@@ -18,9 +18,9 @@ Player.CharacterAdded:Connect(function(NewChar)
     Humanoid = Character:WaitForChild('Humanoid')
 end)
 
-local EventsFolder = ReplicatedStorage:FindFirstChild('Events')
-local RaidRemote = ReplicatedStorage:FindFirstChild('Raid')
-local PartyRemote = ReplicatedStorage:FindFirstChild('Party') 
+local EventsFolder = ReplicatedStorage:WaitForChild('Events')
+local RaidRemote = EventsFolder:FindFirstChild('Raid')
+local PartyRemote = EventsFolder:FindFirstChild('Party') 
 local MobsFolder = workspace:FindFirstChild('Mobs')
 local PutsRemote = EventsFolder and EventsFolder:FindFirstChild('Puts')
 if PutsRemote then
