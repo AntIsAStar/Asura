@@ -19,8 +19,6 @@ Player.CharacterAdded:Connect(function(NewChar)
 end)
 
 local EventsFolder = ReplicatedStorage:WaitForChild('Events')
-local RaidRemote = EventsFolder:WaitForChild('Raid')
-local PartyRemote = EventsFolder:WaitForChild('Party') 
 local MobsFolder = workspace:WaitForChild('Mobs')
 local PutsRemote = EventsFolder and EventsFolder:WaitForChild('Puts')
 if PutsRemote then
@@ -34,9 +32,11 @@ end
 
 local function JoinRaid() 
      if not IsRaidServer() then 
-          RaidRemote:FireServer()
-          PartyRemote:FireServer('Create', 'Christmas')
-          PartyRemote:Start() 
+        local RaidRemote = EventsFolder:WaitForChild('Raid')
+        local PartyRemote = EventsFolder:WaitForChild('Party') 
+        RaidRemote:FireServer()
+        PartyRemote:FireServer('Create', 'Christmas')
+        PartyRemote:Start() 
      end
 end 
 repeat task.wait() 
