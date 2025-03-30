@@ -6,9 +6,6 @@ local TweenService = game:GetService('TweenService')
 local RunService = game:GetService('RunService')
 local TeleportService = game:GetService('TeleportService')
 
-_G.Speed = 0.65
-_G.TimeBeforeKick = 600
-
 local Player = Players.LocalPlayer
 local Backpack = Player.Backpack
 local Character = Player.Character or Player.CharacterAdded:Wait()
