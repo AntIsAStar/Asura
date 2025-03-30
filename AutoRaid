@@ -19,10 +19,10 @@ Player.CharacterAdded:Connect(function(NewChar)
 end)
 
 local EventsFolder = ReplicatedStorage:WaitForChild('Events')
-local RaidRemote = EventsFolder:FindFirstChild('Raid')
-local PartyRemote = EventsFolder:FindFirstChild('Party') 
-local MobsFolder = workspace:FindFirstChild('Mobs')
-local PutsRemote = EventsFolder and EventsFolder:FindFirstChild('Puts')
+local RaidRemote = EventsFolder:WaitForChild('Raid')
+local PartyRemote = EventsFolder:WaitForChild('Party') 
+local MobsFolder = workspace:WaitForChild('Mobs')
+local PutsRemote = EventsFolder and EventsFolder:WaitForChild('Puts')
 if PutsRemote then
     PutsRemote.OnClientInvoke = function() return true end
 end
