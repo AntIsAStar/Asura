@@ -10,12 +10,11 @@ local Client = Players.LocalPlayer or Players:GetPropertyChangedSignal('LocalPla
     Client = Players.LocalPlayer
 end)
 
-local EventsFolder = ReplicatedStorage:WaitForChild('Events')
 local MobsFolder = workspace:WaitForChild('Mobs')
-local PutsRemote = EventsFolder:WaitForChild('Puts')
+local EventsFolder = ReplicatedStorage:WaitForChild('Events')
 
 local RaidServer = workspace:GetAttribute('BossServer')
-local ActiveTween, CurrentTarget
+local ActiveTween
 
 if (RaidServer) then
     task.spawn(function()
@@ -34,25 +33,6 @@ else
     PartyRemote:FireServer('Create', 'Christmas')
     PartyRemote:FireServer('Start')
 end
-
-local function SetupRemoteBypass()
-    local LastSetup = 0
-    while true do
-        if os.clock() - LastSetup > 30 then
-            PutsRemote = EventsFolder:FindFirstChild('Puts') or EventsFolder:WaitForChild('Puts')
-            LastSetup = os.clock()
-            if PutsRemote then
-                pcall(function()
-                    PutsRemote.OnClientInvoke = function() return true end
-                end)
-            end
-        end
-        
-        task.wait(1)
-    end
-end
-
-task.spawn(SetupRemoteBypass)
 
 local GetChar = function(Player)
     return Player and Player.Character
@@ -127,7 +107,6 @@ local function TweenToTarget(Target)
     
     if not HumanoidRootPart or not TargetRoot or Target.Humanoid.Health <= 0 then return end
     
-    CurrentTarget = Target
     local TweenCFrame = CFrame.new(TargetRoot.CFrame * CFrame.new(0, 0, -4).Position, TargetRoot.Position)
     
     if ActiveTween then ActiveTween:Cancel() end
@@ -136,7 +115,7 @@ local function TweenToTarget(Target)
 end
 
 shared.AutoFarmEnabled = not shared.AutoFarmEnabled
-print(shared.AutoFarmEnabled)
+--print(shared.AutoFarmEnabled)
 
 if (MobsFolder and RaidServer) then
     while (shared.AutoFarmEnabled and MobsFolder) do
@@ -149,6 +128,7 @@ if (MobsFolder and RaidServer) then
             local CombatTool = EquipTool()
 
             if (CombatTool) then
+                EventsFolder:WaitForChild('Puts').OnClientInvoke = function() return true end
                 CombatTool:Activate()
             end
         end
