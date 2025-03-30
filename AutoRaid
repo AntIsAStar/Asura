@@ -7,14 +7,9 @@ local RunService = game:GetService('RunService')
 local TeleportService = game:GetService('TeleportService')
 
 local Player = Players.LocalPlayer
-local Backpack = Player.Backpack
 local Character = Player.Character or Player.CharacterAdded:Wait()
 local Humanoid = Character:WaitForChild('Humanoid')
-
-Player.CharacterAdded:Connect(function(NewChar)
-    Character = NewChar
-    Humanoid = NewChar:WaitForChild('Humanoid')
-end)
+local Backpack = Player.Backpack
 
 local EventsFolder = ReplicatedStorage:WaitForChild('Events')
 local MobsFolder = workspace:WaitForChild('Mobs')
@@ -52,13 +47,18 @@ end
 
 local ActiveTween
 local CurrentTarget
-local CombatTool = Backpack:FindFirstChild('Combat') or Character:FindFirstChild('Combat')
+local CombatTool
+
+local function RefreshCombatTool()
+    CombatTool = Backpack:FindFirstChild('Combat') or (Character and Character:FindFirstChild('Combat'))
+end
 
 local function AutoHit()
-    if not CombatTool then
-        CombatTool = Backpack:FindFirstChild('Combat') or Character:FindFirstChild('Combat')
+    if not CombatTool or not CombatTool.Parent then
+        RefreshCombatTool()
         if not CombatTool then return end
     end
+    
     if CombatTool.Parent ~= Character then
         Humanoid:UnequipTools()
         Humanoid:EquipTool(CombatTool)
@@ -68,12 +68,12 @@ local function AutoHit()
 end
 
 local function GetNearestMob()
-    if not MobsFolder then return nil end
+    if not MobsFolder or not Character or not Character.Parent then return nil end
     local NearestMob
     local ShortestDistance = math.huge
     for _, Mob in pairs(MobsFolder:GetChildren()) do
-        if Mob:IsA('Model') and Mob:FindFirstChild('Humanoid') and Mob.Humanoid.Health > 0 then
-            local Distance = Humanoid:GetDistanceFromCharacter(Mob.HumanoidRootPart.Position)
+        if Mob:IsA('Model') and Mob:FindFirstChild('Humanoid') and Mob.Humanoid.Health > 0 and Character:FindFirstChild('HumanoidRootPart') then
+            local Distance = (Mob.HumanoidRootPart.Position - Character.HumanoidRootPart.Position).Magnitude
             if Distance < ShortestDistance then
                 NearestMob = Mob
                 ShortestDistance = Distance
@@ -84,7 +84,10 @@ local function GetNearestMob()
 end
 
 local function TweenToTarget(Target)
-    if not Target or not Target:FindFirstChild('HumanoidRootPart') or Target.Humanoid.Health <= 0 then return end
+    if not Target or not Target:FindFirstChild('HumanoidRootPart') or Target.Humanoid.Health <= 0 
+       or not Character or not Character.Parent or not Character:FindFirstChild('HumanoidRootPart') then 
+        return 
+    end
     if CurrentTarget == Target then return end
     
     CurrentTarget = Target
@@ -98,8 +101,14 @@ local function TweenToTarget(Target)
 end
 
 if MobsFolder and IsRaidServer() then
+    Player.CharacterAdded:Connect(function(NewChar)
+        Character = NewChar
+        Humanoid = NewChar:WaitForChild('Humanoid')
+        RefreshCombatTool()
+    end)
+
     local function HandleCombat()
-        while MobsFolder do
+        while MobsFolder and Character and Character.Parent do
             local NearestMob = GetNearestMob()
             if NearestMob then
                 TweenToTarget(NearestMob)
@@ -111,7 +120,7 @@ if MobsFolder and IsRaidServer() then
 
     MobsFolder.ChildAdded:Connect(function(Mob)
         if Mob:IsA('Model') and Mob:FindFirstChild('Humanoid') then
-            while Mob.Humanoid.Health > 0 do
+            while Mob.Humanoid.Health > 0 and Character and Character.Parent do
                 TweenToTarget(Mob)
                 AutoHit()
                 RunService.Heartbeat:Wait()
@@ -119,6 +128,7 @@ if MobsFolder and IsRaidServer() then
         end
     end)
 
+    RefreshCombatTool()
     coroutine.wrap(HandleCombat)()
     AutoHit()
 end
