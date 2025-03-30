@@ -1,16 +1,19 @@
 repeat task.wait() until game:IsLoaded()
+if not game.PlaceId == 13358463560 then 
+    return 
+end 
 
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
-local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService('Players')
+local ReplicatedStorage = game:GetService('ReplicatedStorage')
+local TweenService = game:GetService('TweenService')
+local TeleportService = game:GetService('TeleportService')
 
 local Client = Players.LocalPlayer or Players:GetPropertyChangedSignal('LocalPlayer'):Wait()
 Client = Players.LocalPlayer
 
-local EventsFolder = ReplicatedStorage:WaitForChild("Events")
-local MobsFolder = workspace:WaitForChild("Mobs")
-local PutsRemote = EventsFolder:WaitForChild("Puts")
+local EventsFolder = ReplicatedStorage:WaitForChild('Events')
+local MobsFolder = workspace:WaitForChild('Mobs')
+local PutsRemote = EventsFolder:WaitForChild('Puts')
 
 local RaidServer = workspace:GetAttribute('BossServer')
 local ActiveTween, CurrentTarget
@@ -26,18 +29,18 @@ if (RaidServer) then
     
     repeat task.wait() until #MobsFolder:GetChildren() > 0
 else
-    EventsFolder:WaitForChild("Raid"):FireServer()
+    EventsFolder:WaitForChild('Raid'):FireServer()
     
-    local PartyRemote = EventsFolder:WaitForChild("Party")
-    PartyRemote:FireServer("Create", "Christmas")
-    PartyRemote:FireServer("Start")
+    local PartyRemote = EventsFolder:WaitForChild('Party')
+    PartyRemote:FireServer('Create', 'Christmas')
+    PartyRemote:FireServer('Start')
 end
 
 local function SetupRemoteBypass()
     local LastSetup = 0
     while true do
         if os.clock() - LastSetup > 30 then
-            PutsRemote = EventsFolder:FindFirstChild("Puts") or EventsFolder:WaitForChild("Puts")
+            PutsRemote = EventsFolder:FindFirstChild('Puts') or EventsFolder:WaitForChild('Puts')
             LastSetup = os.clock()
             if PutsRemote then
                 pcall(function()
@@ -77,9 +80,9 @@ local function EquipTool()
     local Tool = (function()
         local Backpack = GetBackpack(Client)
         
-        for i,v in (Backpack and Backpack:GetChildren() or {}) do
-            if (v:IsA('Tool') and v.Name == 'Combat') then
-                return v
+        for Index, Value in (Backpack and Backpack:GetChildren() or {}) do
+            if (Value:IsA('Tool') and Value.Name == 'Combat') then
+                return Value
             end
         end
     end)()
@@ -118,7 +121,7 @@ end
 
 local function TweenToTarget(Target)
     local Char = GetChar(Client)
-    if not Char or CurrentTarget == Target then return end
+    if not Char then return end
     
     local HumanoidRootPart = GetRoot(Char)
     local TargetRoot = Target and GetRoot(Target)
@@ -133,10 +136,11 @@ local function TweenToTarget(Target)
     ActiveTween:Play()
 end
 
-LoopToggle = not LoopToggle
+shared.AutoFarmEnabled = not shared.AutoFarmEnabled
+print(shared.AutoFarmEnabled)
 
 if (MobsFolder and RaidServer) then
-    while (LoopToggle and MobsFolder) do
+    while (shared.AutoFarmEnabled and MobsFolder) do
         local NearestMob = GetNearestMob()
         local Char = GetChar(Client)
 
