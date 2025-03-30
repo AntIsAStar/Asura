@@ -19,15 +19,29 @@ Player.CharacterAdded:Connect(function(NewChar)
 end)
 
 local EventsFolder = ReplicatedStorage:FindFirstChild('Events')
+local RaidRemote = ReplicatedStorage:FindFirstChild('Raid')
+local PartyRemote = ReplicatedStorage:FindFirstChild('Party') 
 local MobsFolder = workspace:FindFirstChild('Mobs')
 local PutsRemote = EventsFolder and EventsFolder:FindFirstChild('Puts')
 if PutsRemote then
     PutsRemote.OnClientInvoke = function() return true end
 end
 
+
 local function IsRaidServer()
     return not workspace:FindFirstChild('1v1Arena')
 end
+
+local function JoinRaid() 
+     if not IsRaidServer() then 
+          RaidRemote:FireServer()
+          PartyRemote:FireServer('Create', 'Christmas')
+          PartyRemote:Start() 
+     ebd 
+end 
+repeat task.wait() 
+     JoinRaid() 
+until IsRaidServer()
 
 if IsRaidServer() then
     task.spawn(function()
@@ -88,7 +102,6 @@ local function TweenToTarget(Target)
     return ActiveTween
 end
 
--- Main Combat Loop
 if MobsFolder and IsRaidServer() then
     local function HandleCombat()
         while MobsFolder do
