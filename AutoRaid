@@ -6,8 +6,9 @@ local ReplicatedStorage = game:GetService('ReplicatedStorage')
 local TweenService = game:GetService('TweenService')
 local TeleportService = game:GetService('TeleportService')
 
-local Client = Players.LocalPlayer or Players:GetPropertyChangedSignal('LocalPlayer'):Wait()
-Client = Players.LocalPlayer
+local Client = Players.LocalPlayer or Players:GetPropertyChangedSignal('LocalPlayer'):Connect(function()
+    Client = Players.LocalPlayer
+end)
 
 local EventsFolder = ReplicatedStorage:WaitForChild('Events')
 local MobsFolder = workspace:WaitForChild('Mobs')
