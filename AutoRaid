@@ -3,18 +3,35 @@ repeat task.wait() until game:IsLoaded()
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
-local RunService = game:GetService("RunService")
 local TeleportService = game:GetService("TeleportService")
 
-
-local Player = Players.LocalPlayer
-local Backpack = Player.Backpack
+local Client = Players.LocalPlayer or Players:GetPropertyChangedSignal('LocalPlayer'):Wait()
+Client = Players.LocalPlayer
 
 local EventsFolder = ReplicatedStorage:WaitForChild("Events")
 local MobsFolder = workspace:WaitForChild("Mobs")
 local PutsRemote = EventsFolder:WaitForChild("Puts")
 
+local RaidServer = workspace:GetAttribute('BossServer')
 local ActiveTween, CurrentTarget
+
+if (RaidServer) then
+    task.spawn(function()
+        local StartTime = os.time()
+        while os.time() - StartTime < getgenv().TimeBeforeKick do
+            task.wait(1)
+        end
+        TeleportService:Teleport(13358463560)
+    end)
+    
+    repeat task.wait() until #MobsFolder:GetChildren() > 0
+else
+    EventsFolder:WaitForChild("Raid"):FireServer()
+    
+    local PartyRemote = EventsFolder:WaitForChild("Party")
+    PartyRemote:FireServer("Create", "Christmas")
+    PartyRemote:FireServer("Start")
+end
 
 local function SetupRemoteBypass()
     local LastSetup = 0
@@ -22,92 +39,89 @@ local function SetupRemoteBypass()
         if os.clock() - LastSetup > 30 then
             PutsRemote = EventsFolder:FindFirstChild("Puts") or EventsFolder:WaitForChild("Puts")
             LastSetup = os.clock()
+            if PutsRemote then
+                pcall(function()
+                    PutsRemote.OnClientInvoke = function() return true end
+                end)
+            end
         end
         
-        if PutsRemote then
-            pcall(function()
-                PutsRemote.OnClientInvoke = function() return true end
-            end)
-        end
         task.wait(1)
     end
 end
+
 task.spawn(SetupRemoteBypass)
 
-local function IsRaidServer()
-    return not workspace:FindFirstChild("1v1Arena")
+local GetChar = function(Player)
+    return Player and Player.Character
 end
 
-local function JoinRaid()
-    if not IsRaidServer() then
-        EventsFolder:WaitForChild("Raid"):FireServer()
-        local PartyRemote = EventsFolder:WaitForChild("Party")
-        PartyRemote:FireServer("Create", "Christmas")
-        PartyRemote:FireServer("Start")
-    end
+local GetRoot = function(Char)
+    return Char and Char:FindFirstChild('HumanoidRootPart')
 end
 
-repeat task.wait() JoinRaid() until IsRaidServer()
+local GetHum = function(Char)
+    return Char and Char:FindFirstChildWhichIsA('Humanoid')
+end
 
-if IsRaidServer() then
-    task.spawn(function()
-        local StartTime = os.time()
-        while os.time() - StartTime < _G.TimeBeforeKick do
-            task.wait(1)
+local GetBackpack = function(Player)
+    return Player and Player:FindFirstChildWhichIsA('Backpack')
+end
+
+local function EquipTool()
+    local Char = GetChar(Client)
+    local Hum = GetHum(Char)
+
+    if not (Char and Hum) then return end
+
+    local Tool = (function()
+        local Backpack = GetBackpack(Client)
+        
+        for i,v in (Backpack and Backpack:GetChildren() or {}) do
+            if (v:IsA('Tool') and v.Name == 'Combat') then
+                return v
+            end
         end
-        TeleportService:Teleport(13358463560)
-    end)
-    
-    repeat task.wait() until #MobsFolder:GetChildren() > 0
-end
+    end)()
 
-local function GetCombatTool()
-    local Tool = Backpack:FindFirstChild("Combat") or (Player.Character and Player.Character:FindFirstChild("Combat"))
-    if Tool and Tool.Parent == Backpack then
-        local Humanoid = Player.Character and Player.Character:FindFirstChild("Humanoid")
-        if Humanoid then
-            Humanoid:UnequipTools()
-            Humanoid:EquipTool(Tool)
-            RunService.Heartbeat:Wait()
-        end
+    if (Tool) then
+        Hum:EquipTool(Tool)
     end
-    return Tool
-end
 
-local function AutoHit()
-    local CombatTool = GetCombatTool()
-    if CombatTool and CombatTool.Parent == Player.Character then
-        CombatTool:Activate()
-    end
+    return Char:FindFirstChildWhichIsA('Tool')
 end
 
 local function GetNearestMob()
-    if not MobsFolder or not Player.Character then return nil end
+    local Char = GetChar(Client)
+    if not (MobsFolder and Char) then return end
     
-    local HumanoidRootPart = Player.Character:FindFirstChild("HumanoidRootPart")
-    if not HumanoidRootPart then return nil end
+    local Root = GetRoot(Char)
+    if (not Root) then return end
     
-    local NearestMob, ShortestDistance
-    for _, Mob in pairs(MobsFolder:GetChildren()) do
-        local MobHumanoid = Mob:FindFirstChild("Humanoid")
-        local MobRoot = Mob:FindFirstChild("HumanoidRootPart")
+    local ShortestDistance, NearestMob = math.huge
+    for _, Mob in (MobsFolder:GetChildren()) do
+        local MobHumanoid = GetHum(Mob)
+        local MobRoot = GetRoot(Mob)
         
         if MobHumanoid and MobHumanoid.Health > 0 and MobRoot then
-            local Distance = (MobRoot.Position - HumanoidRootPart.Position).Magnitude
-            if not NearestMob or Distance < ShortestDistance then
+            local Distance = vector.magnitude(MobRoot.Position - Root.Position)
+
+            if (Distance < ShortestDistance) then
                 NearestMob = Mob
                 ShortestDistance = Distance
             end
         end
     end
+
     return NearestMob
 end
 
 local function TweenToTarget(Target)
-    if not Player.Character or CurrentTarget == Target then return end
+    local Char = GetChar(Client)
+    if not Char or CurrentTarget == Target then return end
     
-    local HumanoidRootPart = Player.Character:FindFirstChild("HumanoidRootPart")
-    local TargetRoot = Target and Target:FindFirstChild("HumanoidRootPart")
+    local HumanoidRootPart = GetRoot(Char)
+    local TargetRoot = Target and GetRoot(Target)
     
     if not HumanoidRootPart or not TargetRoot or Target.Humanoid.Health <= 0 then return end
     
@@ -115,40 +129,27 @@ local function TweenToTarget(Target)
     local TweenCFrame = CFrame.new(TargetRoot.CFrame * CFrame.new(0, 0, -4).Position, TargetRoot.Position)
     
     if ActiveTween then ActiveTween:Cancel() end
-    ActiveTween = TweenService:Create(HumanoidRootPart, TweenInfo.new(_G.Speed, Enum.EasingStyle.Linear), {CFrame = TweenCFrame})
+    ActiveTween = TweenService:Create(HumanoidRootPart, TweenInfo.new(getgenv().Speed, Enum.EasingStyle.Linear), {CFrame = TweenCFrame})
     ActiveTween:Play()
 end
 
-if MobsFolder and IsRaidServer() then
-    Player.CharacterAdded:Connect(function()
-        if Player.Character then
-            local Humanoid = Player.Character:FindFirstChild("Humanoid")
-            if Humanoid then
-                Humanoid:UnequipTools()
-            end
-        end
-    end)
+LoopToggle = not LoopToggle
 
-    local function HandleCombat()
-        while MobsFolder and Player.Character do
-            local NearestMob = GetNearestMob()
-            if NearestMob then
-                TweenToTarget(NearestMob)
-                AutoHit()
+if (MobsFolder and RaidServer) then
+    while (LoopToggle and MobsFolder) do
+        local NearestMob = GetNearestMob()
+        local Char = GetChar(Client)
+
+        if Char and NearestMob then
+            TweenToTarget(NearestMob)
+            
+            local CombatTool = EquipTool()
+
+            if (CombatTool) then
+                CombatTool:Activate()
             end
-            RunService.Heartbeat:Wait()
         end
+
+        task.wait()
     end
-
-    MobsFolder.ChildAdded:Connect(function(Mob)
-        if Mob:FindFirstChild("Humanoid") then
-            while Mob.Humanoid.Health > 0 and Player.Character do
-                TweenToTarget(Mob)
-                AutoHit()
-                RunService.Heartbeat:Wait()
-            end
-        end
-    end)
-
-    coroutine.wrap(HandleCombat)()
 end
