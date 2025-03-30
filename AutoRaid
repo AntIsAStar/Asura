@@ -1,7 +1,5 @@
 repeat task.wait() until game:IsLoaded()
-if not game.PlaceId == 13358463560 then 
-    return 
-end 
+assert(game.PlaceId == 13358463560, 'Game not supported')
 
 local Players = game:GetService('Players')
 local ReplicatedStorage = game:GetService('ReplicatedStorage')
